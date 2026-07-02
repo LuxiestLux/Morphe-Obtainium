@@ -1,56 +1,54 @@
-# ReVanced Magisk Module
-[![Telegram](https://img.shields.io/badge/Telegram-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white)](https://t.me/rvc_magisk)
-[![CI](https://github.com/j-hc/revanced-magisk-module/actions/workflows/ci.yml/badge.svg?event=schedule)](https://github.com/j-hc/revanced-magisk-module/actions/workflows/ci.yml)
+<div align="center">
 
-Extensive ReVanced builder  
+[![Title](https://readme-typing-svg.demolab.com?font=Press+Start+2P&duration=1500&pause=100&color=853BFF&center=true&multiline=true&width=530&height=120&lines=Morphe+Apps+Builder;Updated+Daily;Lightweight+APKs)](https://git.io/typing-svg)  
+![Build](https://img.shields.io/github/actions/workflow/status/Drsexo/Morphe-Obtainium/build.yml?style=for-the-badge&logo=monster&logoColor=%23ffffff&logoSize=auto&color=%237028E7)  
 
-Get the [latest CI release](https://github.com/j-hc/revanced-magisk-module/releases).
+![YouTube](https://img.shields.io/endpoint?style=flat-square&logo=youtube&logoColor=%23FF0000&color=%237028E7&url=https%3A%2F%2Fraw.githubusercontent.com%2FDrsexo%2FMorphe-Obtainium%2Fupdate%2Fyoutube-morphe-badge.json)
+![YouTube Music](https://img.shields.io/endpoint?style=flat-square&logo=youtubemusic&logoColor=%23FF0000&color=%237028E7&url=https%3A%2F%2Fraw.githubusercontent.com%2FDrsexo%2FMorphe-Obtainium%2Fupdate%2Fyoutube-music-morphe-badge.json)
+![Reddit](https://img.shields.io/endpoint?style=flat-square&logo=reddit&logoColor=%23FF4500&color=%237028E7&url=https%3A%2F%2Fraw.githubusercontent.com%2FDrsexo%2FMorphe-Obtainium%2Fupdate%2Freddit-morphe-badge.json)
+![X](https://img.shields.io/endpoint?style=flat-square&logo=x&logoColor=%23000000&color=%237028E7&url=https%3A%2F%2Fraw.githubusercontent.com%2FDrsexo%2FMorphe-Obtainium%2Fupdate%2Fx-piko-badge.json)
+![Instagram](https://img.shields.io/endpoint?style=flat-square&logo=instagram&logoColor=%23E4405F&color=%237028E7&url=https%3A%2F%2Fraw.githubusercontent.com%2FDrsexo%2FMorphe-Obtainium%2Fupdate%2Finstagram-piko-badge.json)
 
-Use [**zygisk-detach**](https://github.com/j-hc/zygisk-detach) to detach YouTube and YT Music from Play Store if you are using magisk modules. 
+</div>
 
-<details><summary><big>Features</big></summary>
-<ul>
- <li> Supports all present and future ReVanced apps (including projects implementing the same API)</li>
- <li> Can build Magisk modules and non-root APKs</li>
- <li> Updated daily with the latest versions of apps and patches</li>
- <li> Optimizes APKs and modules for size</li>
- <li> Modules</li>
-    <ul>
-     <li> recompile invalidated odex for faster usage</li>
-     <li> receive updates from Magisk app</li>
-     <li> do not break safetynet or trigger root detections</li>
-     <li> handle installation of the correct version of the stock app and all that</li>
-     <li> support Magisk and KernelSU</li>
-    </ul>
-</ul>
-</details>
+Automated builder for Morphe and Piko patched apps with Obtainium support.  
+Fork of [j-hc/revanced-magisk-module](https://github.com/j-hc/revanced-magisk-module), focused on Morphe/Piko patches and arm64-only builds.
 
-## To include/exclude patches or patch other apps
+## What's different
 
- * Star the repo :eyes:
- * Use the repo as a [template](https://github.com/new?template_name=revanced-magisk-module&template_owner=j-hc)
- * Customize [`config.toml`](./config.toml) using [rvmm-config-gen](https://j-hc.github.io/rvmm-config-gen/)
- * Run the build [workflow](../../actions/workflows/build.yml)
- * Grab your modules and APKs from [releases](../../releases)
+- **Morphe + Piko patches** instead of ReVanced
+- **Per-app releases**: each app gets its own GitHub release tag, easy to roll back
+- **Auto-fallback**: if the latest app version fails to patch, tries older versions automatically
+- **Smaller APKs**: arm64 only, strips other libs
+- **KSU/APatch support**: proper `nsenter` mount on boot, not just Magisk
+- **Better mounting**: `nosuid,nodev` bind mounts, susfs auto-hide, idempotent re-mount on boot, cleaner path under `/data/adb/Morphe-Module`
+- **curl-impersonate**: bypasses anti-bot checks on APKMirror/Uptodown
 
-also see here [`CONFIG.md`](./CONFIG.md)
+## Apps Built
 
-## If you are having trouble with the classic mount method of the modules
-such as,
-- **"Reflash needed"** error after reboots
-- **"Suspicious mount detected"** warnings from root detector apps
+| App | Patches | Build Mode | Obtainium |
+|:--------:|:---|:---|:-:|
+| <img src="docs/youtube.png" width="30" height="30"> **YouTube** | Morphe | APK + Module | [![Add][badge]][obt] |
+| <img src="docs/music.png" width="30" height="30"> **YouTube Music** | Morphe | APK + Module | [![Add][badge]][obt] |
+| <img src="docs/reddit.png" width="30" height="30"> **Reddit** | Morphe | APK | [![Add][badge]][obt] |
+| <img src="docs/x.png" width="30" height="30"> **X (Twitter)** | Piko | APK | [![Add][badge]][obt] |
+| <img src="docs/instagram.png" width="30" height="30"> **Instagram** | Piko | APK | [![Add][badge]][obt] |
 
-You can consider using [rvmm-zygisk-mount](https://github.com/j-hc/rvmm-zygisk-mount)
+[badge]: https://img.shields.io/badge/Add-Add?style=flat-square&logo=Obtainium&logoColor=%23ffffff&logoSize=auto&color=%237028E7
+[obt]: https://drsexo.github.io/Morphe-Obtainium/Obtainium.html
 
-## Building Locally
-### On Termux
-```console
-bash <(curl -sSf https://raw.githubusercontent.com/j-hc/revanced-magisk-module/main/build-termux.sh)
-```
+## Build Schedule
 
-### On Linux
-```console
-$ git clone https://github.com/j-hc/revanced-magisk-module --depth 1
-$ cd revanced-magisk-module
-$ ./build.sh
-```
+Builds run **daily at midnight UTC**, triggered only when new stable patches are released.  
+Tries the latest app version first; if patching fails, falls back to older versions.
+
+## Manual Installation
+
+### Root (Magisk/KernelSU/APatch Module)
+1. Download and install the Magisk module (`.zip`) from [Releases](../../releases)
+2. Reboot
+3. (Recommended) Use [zygisk-detach](https://github.com/j-hc/zygisk-detach) to detach the app from Play Store updates
+
+### Non-root (APK)
+1. Download and install the APK from [Releases](../../releases)
+2. Install [MicroG-RE](https://github.com/MorpheApp/MicroG-RE/releases) for Google login functionality

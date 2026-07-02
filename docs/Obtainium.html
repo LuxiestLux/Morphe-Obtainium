@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Morphe Builder - Obtainium</title>
+    <style>
+        :root {
+            --bg-primary: #0f0f23;
+            --bg-secondary: #1a1a2e;
+            --bg-card: #1e1e32;
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0b0;
+            --border-color: rgba(255, 255, 255, 0.08);
+            --accent-color: #6366f1;
+            --accent-secondary: #8b5cf6;
+            --shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+            --transition: all 0.25s ease;
+        }
+        
+        [data-theme="light"] {
+            --bg-primary: #f8fafc;
+            --bg-secondary: #f1f5f9;
+            --bg-card: #ffffff;
+            --text-primary: #0f172a;
+            --text-secondary: #64748b;
+            --border-color: rgba(0, 0, 0, 0.06);
+            --shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+        }
+
+        * { 
+            margin: 0; 
+            padding: 0; 
+            box-sizing: border-box; 
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 50%, var(--bg-primary) 100%);
+            background-attachment: fixed;
+            color: var(--text-primary);
+            min-height: 100vh;
+            line-height: 1.6;
+            transition: var(--transition);
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(circle at 20% 50%, rgba(99, 102, 241, 0.12) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(139, 92, 246, 0.12) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: -1;
+            will-change: transform;
+            transform: translateZ(0);
+        }
+
+        .container { 
+            max-width: 900px; 
+            margin: 0 auto; 
+            padding: 60px 20px; 
+        }
+
+        .header { 
+            text-align: center; 
+            margin-bottom: 30px; 
+            position: relative; 
+            animation: fadeInDown 0.6s ease;
+        }
+
+        .theme-toggle {
+            position: absolute; 
+            top: 0; 
+            right: 0;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 50%; 
+            width: 44px; 
+            height: 44px; 
+            cursor: pointer;
+            display: flex; 
+            align-items: center; 
+            justify-content: center;
+            transition: var(--transition);
+            box-shadow: var(--shadow);
+            will-change: transform;
+        }
+
+        .theme-toggle:active { 
+            transform: scale(0.92);
+        }
+
+        .theme-toggle:hover { 
+            transform: scale(1.05);
+            border-color: var(--accent-color);
+        }
+
+        .theme-toggle svg { 
+            width: 22px; 
+            height: 22px; 
+            transition: var(--transition);
+        }
+
+        #moon-icon {
+            fill: #ffffff;
+        }
+
+        #sun-icon {
+            fill: #0f172a;
+        }
+
+        .title { 
+            font-size: 3rem; 
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--text-primary) 0%, var(--accent-color) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 12px;
+            letter-spacing: -0.02em;
+        }
+
+        .subtitle { 
+            color: var(--text-secondary); 
+            font-size: 1.25rem; 
+            margin-bottom: 24px;
+            font-weight: 400;
+        }
+
+        .github-btn {
+            display: inline-flex; 
+            align-items: center; 
+            gap: 10px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            text-decoration: none;
+            padding: 12px 24px; 
+            border-radius: 12px; 
+            font-weight: 600;
+            transition: var(--transition);
+            margin-bottom: 0px;
+            will-change: transform;
+        }
+
+        .github-btn:hover { 
+            border-color: var(--accent-color);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow);
+        }
+
+        .github-btn svg { 
+            width: 20px; 
+            height: 20px; 
+            fill: currentColor;
+            transition: transform 0.3s ease;
+        }
+
+        .github-btn:hover svg {
+            transform: rotate(360deg);
+        }
+
+        .prereqs {
+            display: flex; 
+            align-items: center; 
+            gap: 12px;
+            margin-bottom: 16px; 
+            padding: 16px 20px;
+            background: rgba(251, 191, 36, 0.08);
+            border: 1px solid rgba(251, 191, 36, 0.2);
+            border-radius: 12px; 
+            font-size: 0.95rem; 
+            color: var(--text-secondary);
+            animation: fadeIn 0.6s ease 0.2s both;
+        }
+
+        .prereqs svg { 
+            width: 20px; 
+            height: 20px; 
+            fill: #fbbf24; 
+            flex-shrink: 0; 
+        }
+
+        .prereqs a { 
+            color: var(--accent-color); 
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .prereqs a:hover {
+            text-decoration: underline;
+        }
+
+        .apps-grid { 
+            display: grid; 
+            gap: 12px; 
+            margin-bottom: 40px; 
+        }
+
+        .app-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 14px; 
+            padding: 16px 18px;
+            display: flex; 
+            align-items: center; 
+            gap: 14px;
+            cursor: pointer; 
+            text-decoration: none;
+            transition: var(--transition);
+            box-shadow: var(--shadow);
+            position: relative; 
+            overflow: hidden;
+            will-change: transform;
+            contain: layout;
+        }
+
+        .app-card::before {
+            content: ''; 
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            width: 3px;
+            height: 100%;
+            opacity: 0;
+            transition: opacity 0.25s ease;
+        }
+
+        .app-card:hover { 
+            transform: translateY(-2px);
+            border-color: transparent;
+        }
+
+        .app-card:hover::before { 
+            opacity: 1; 
+        }
+
+        .app-youtube    { --brand-color: #ff0000; --brand-gradient: linear-gradient(135deg, #ff0000, #cc0000); }
+        .app-ytmusic    { --brand-color: #ff0000; --brand-gradient: linear-gradient(135deg, #ff0000, #cc0000); }
+        .app-reddit     { --brand-color: #ff4500; --brand-gradient: linear-gradient(135deg, #ff4500, #ff6347); }
+        .app-microg     { --brand-color: #4285f4; --brand-gradient: linear-gradient(135deg, #4285f4, #34a853, #fbbc05, #ea4335); }
+        .app-x          { --brand-color: #000000; --brand-gradient: linear-gradient(135deg, #000000, #1a1a1a); }
+        .app-instagram  { --brand-color: #E4405F; --brand-gradient: linear-gradient(135deg, #833ab4, #fd1d1d, #fcb045); }
+
+        [data-theme="light"] .app-x { --brand-color: #000000; --brand-gradient: linear-gradient(135deg, #000000, #2a2a2a); }
+
+        .app-card.app-youtube::before   { background: var(--brand-gradient); }
+        .app-card.app-ytmusic::before   { background: var(--brand-gradient); }
+        .app-card.app-reddit::before    { background: var(--brand-gradient); }
+        .app-card.app-microg::before    { background: var(--brand-gradient); }
+        .app-card.app-x::before         { background: var(--brand-gradient); }
+        .app-card.app-instagram::before { background: var(--brand-gradient); }
+
+        .app-card.app-youtube:hover    { border-left-color: #ff0000; }
+        .app-card.app-ytmusic:hover    { border-left-color: #ff0000; }
+        .app-card.app-reddit:hover     { border-left-color: #ff4500; }
+        .app-card.app-microg:hover     { border-left-color: #4285f4; }
+        .app-card.app-x:hover          { border-left-color: #000000; }
+        .app-card.app-instagram:hover  { border-left-color: #E4405F; }
+
+        .app-icon {
+            width: 48px; 
+            height: 48px; 
+            border-radius: 12px;
+            display: flex; 
+            align-items: center; 
+            justify-content: center;
+            flex-shrink: 0; 
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            transition: transform 0.25s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .app-icon::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: var(--brand-gradient);
+        }
+
+        .app-card:hover .app-icon {
+            transform: scale(1.05);
+        }
+
+        .app-icon svg { 
+            width: 24px; 
+            height: 24px;
+            fill: white;
+            position: relative;
+            z-index: 1;
+        }
+
+        .app-info { 
+            flex: 1; 
+            min-width: 0; 
+        }
+
+        .app-name { 
+            font-size: 1.1rem; 
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 2px;
+        }
+
+        .app-desc { 
+            font-size: 0.85rem; 
+            color: var(--text-secondary);
+            line-height: 1.4;
+        }
+
+        .app-arrow {
+            width: 32px; 
+            height: 32px; 
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            display: flex; 
+            align-items: center; 
+            justify-content: center;
+            transition: var(--transition); 
+            flex-shrink: 0;
+            border: 1px solid var(--border-color);
+        }
+
+        .app-card:hover .app-arrow { 
+            background: var(--brand-color); 
+            border-color: transparent;
+        }
+
+        .app-arrow svg { 
+            width: 16px; 
+            height: 16px; 
+            fill: var(--text-primary);
+            transition: transform 0.25s ease;
+        }
+
+        .app-card:hover .app-arrow svg { 
+            fill: white;
+            transform: translateX(2px);
+        }
+
+        .footer {
+            text-align: center; 
+            padding: 28px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px; 
+            box-shadow: var(--shadow);
+            animation: fadeInUp 0.6s ease 0.4s both;
+            position: relative;
+        }
+
+        .footer h3 { 
+            margin-bottom: 20px;
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .json-button {
+            display: inline-flex; 
+            align-items: center; 
+            gap: 10px;
+            background: linear-gradient(135deg, var(--accent-color) 0%, var(--accent-secondary) 100%);
+            color: white; 
+            text-decoration: none;
+            padding: 14px 28px; 
+            border-radius: 12px; 
+            font-weight: 600;
+            font-size: 1rem;
+            transition: var(--transition);
+            will-change: transform;
+        }
+
+        .json-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(99, 102, 241, 0.4);
+        }
+
+        .json-button svg {
+            width: 20px;
+            height: 20px;
+            fill: white;
+        }
+
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to   { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle theme">
+                <svg id="moon-icon" viewBox="0 0 24 24" style="display:none"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+                <svg id="sun-icon" viewBox="0 0 24 24" style="display:none"><path d="M12 17.5a5.5 5.5 0 1 0 0-11 5.5 5.5 0 0 0 0 11zM12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+            </button>
+            <div class="title">Morphe Builder</div>
+            <div class="subtitle">Tap an app to add it to Obtainium</div>
+            <a href="https://github.com/Drsexo/Morphe-Obtainium" class="github-btn" target="_blank">
+                <svg viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
+                GitHub
+            </a>
+        </div>
+
+        <div class="prereqs">
+            <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+            <span>Requires <a href="https://obtainium.imranr.dev/" target="_blank">Obtainium</a> to be installed. YouTube &amp; YouTube Music also need <a href="https://github.com/MorpheApp/MicroG-RE/releases" target="_blank">MicroG-RE</a> for Google login.</span>
+        </div>
+
+        <div class="apps-grid" id="apps-grid"></div>
+
+        <div class="footer">
+            <h3>Import All Apps at Once</h3>
+            <a href="Obtainium.json" download="Obtainium.json" class="json-button">
+                <svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+                Download Obtainium.json
+            </a>
+        </div>
+    </div>
+
+    <script>
+        const apps = [
+            {
+                name: "YouTube Morphe",
+                desc: "Ad-free YouTube with advanced Morphe patches and background playback",
+                cssClass: "app-youtube",
+                iconSvg: '<path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"/>',
+                config: {
+                    id: "com.google.android.youtube",
+                    url: "https://github.com/Drsexo/Morphe-Obtainium",
+                    author: "Drsexo",
+                    name: "YouTube Morphe",
+                    preferredApkIndex: 0,
+                    additionalSettings: {
+                        includePrereleases: false,
+                        fallbackToOlderReleases: true,
+                        filterReleaseTitlesByRegEx: "^YouTube Morphe$",
+                        versionExtractionRegEx: "youtube-morphe-v([0-9.]+)",
+                        matchGroupToUse: "1",
+                        versionDetection: true,
+                        apkFilterRegEx: "youtube-morphe-v[0-9.]+-arm64-v8a\\.apk$",
+                        autoApkFilterByArch: false,
+                        appName: "YouTube Morphe"
+                    }
+                }
+            },
+            {
+                name: "YouTube Music Morphe",
+                desc: "Premium music streaming without ads and with offline capabilities",
+                cssClass: "app-ytmusic",
+                iconSvg: '<path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>',
+                config: {
+                    id: "com.google.android.apps.youtube.music",
+                    url: "https://github.com/Drsexo/Morphe-Obtainium",
+                    author: "Drsexo",
+                    name: "YouTube Music Morphe",
+                    preferredApkIndex: 0,
+                    additionalSettings: {
+                        includePrereleases: false,
+                        fallbackToOlderReleases: true,
+                        filterReleaseTitlesByRegEx: "^YouTube Music Morphe$",
+                        versionExtractionRegEx: "youtube-music-morphe-v([0-9.]+)",
+                        matchGroupToUse: "1",
+                        versionDetection: true,
+                        apkFilterRegEx: "youtube-music-morphe-v[0-9.]+-arm64-v8a\\.apk$",
+                        autoApkFilterByArch: false,
+                        appName: "YouTube Music Morphe"
+                    }
+                }
+            },
+            {
+                name: "Reddit Morphe",
+                desc: "Enhanced Reddit experience without ads and with premium features",
+                cssClass: "app-reddit",
+                iconSvg: '<path d="M12 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0zm5.01 4.744c.688 0 1.25.561 1.25 1.249a1.25 1.25 0 0 1-2.498.056l-2.597-.547-.8 3.747c1.824.07 3.48.632 4.674 1.488.308-.309.73-.491 1.207-.491.968 0 1.754.786 1.754 1.754 0 .716-.435 1.333-1.01 1.614a3.111 3.111 0 0 1 .042.52c0 2.694-3.13 4.87-7.004 4.87-3.874 0-7.004-2.176-7.004-4.87 0-.183.015-.366.043-.534A1.748 1.748 0 0 1 4.028 12c0-.968.786-1.754 1.754-1.754.463 0 .898.196 1.207.49 1.207-.883 2.878-1.43 4.744-1.487l.885-4.182a.342.342 0 0 1 .14-.197.35.35 0 0 1 .238-.042l2.906.617a1.214 1.214 0 0 1 1.108-.701zM9.25 12C8.561 12 8 12.562 8 13.25c0 .687.561 1.248 1.25 1.248.687 0 1.248-.561 1.248-1.249 0-.688-.561-1.249-1.249-1.249zm5.5 0c-.687 0-1.248.561-1.248 1.25 0 .687.561 1.248 1.249 1.248.688 0 1.249-.561 1.249-1.249 0-.687-.562-1.249-1.25-1.249zm-5.466 3.99a.327.327 0 0 0-.231.094.33.33 0 0 0 0 .463c.842.842 2.484.913 2.961.913.477 0 2.105-.056 2.961-.913a.361.361 0 0 0 .029-.463.33.33 0 0 0-.464 0c-.547.533-1.684.73-2.512.73-.828 0-1.979-.196-2.512-.73a.326.326 0 0 0-.232-.095z"/>',
+                config: {
+                    id: "com.reddit.frontpage",
+                    url: "https://github.com/Drsexo/Morphe-Obtainium",
+                    author: "Drsexo",
+                    name: "Reddit Morphe",
+                    preferredApkIndex: 0,
+                    additionalSettings: {
+                        includePrereleases: false,
+                        fallbackToOlderReleases: true,
+                        filterReleaseTitlesByRegEx: "^Reddit Morphe$",
+                        versionExtractionRegEx: "reddit-morphe-v([0-9.]+)",
+                        matchGroupToUse: "1",
+                        versionDetection: true,
+                        apkFilterRegEx: "reddit-morphe-v[0-9.]+-arm64-v8a\\.apk$",
+                        autoApkFilterByArch: false,
+                        appName: "Reddit Morphe"
+                    }
+                }
+            },
+            {
+                name: "X Piko",
+                desc: "Twitter/X with Piko patches for premium features and customization",
+                cssClass: "app-x",
+                iconSvg: '<path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>',
+                config: {
+                    id: "com.twitter.android",
+                    url: "https://github.com/Drsexo/Morphe-Obtainium",
+                    author: "Drsexo",
+                    name: "X Piko",
+                    preferredApkIndex: 0,
+                    additionalSettings: {
+                        includePrereleases: false,
+                        fallbackToOlderReleases: true,
+                        filterReleaseTitlesByRegEx: "^X Piko$",
+                        versionExtractionRegEx: "x-piko-v([0-9.]+(?:-release\\.[0-9]+)?)",
+                        matchGroupToUse: "1",
+                        versionDetection: true,
+                        apkFilterRegEx: "x-piko-v.*-arm64-v8a\\.apk$",
+                        autoApkFilterByArch: false,
+                        appName: "X Piko"
+                    }
+                }
+            },
+            {
+                name: "Instagram Piko",
+                desc: "Instagram with Piko patches to remove ads and unlock premium features",
+                cssClass: "app-instagram",
+                iconSvg: '<path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>',
+                config: {
+                    id: "com.instagram.android",
+                    url: "https://github.com/Drsexo/Morphe-Obtainium",
+                    author: "Drsexo",
+                    name: "Instagram Piko",
+                    preferredApkIndex: 0,
+                    additionalSettings: {
+                        includePrereleases: false,
+                        fallbackToOlderReleases: true,
+                        filterReleaseTitlesByRegEx: "^Instagram Piko$",
+                        versionExtractionRegEx: "instagram-piko-v([0-9.]+)",
+                        matchGroupToUse: "1",
+                        versionDetection: true,
+                        apkFilterRegEx: "instagram-piko-v[0-9.]+-arm64-v8a\\.apk$",
+                        autoApkFilterByArch: false,
+                        appName: "Instagram Piko"
+                    }
+                }
+            },
+            {
+                name: "MicroG RE",
+                desc: "Essential for Google account login in patched YouTube apps",
+                cssClass: "app-microg",
+                iconSvg: '<path d="M12.545,10.239v3.821h5.445c-0.712,2.315-2.647,3.972-5.445,3.972c-3.332,0-6.033-2.701-6.033-6.032s2.701-6.032,6.033-6.032c1.498,0,2.866,0.549,3.921,1.453l2.814-2.814C17.503,2.988,15.139,2,12.545,2C7.021,2,2.543,6.477,2.543,12s4.478,10,10.002,10c8.396,0,10.249-7.85,9.426-11.748L12.545,10.239z"/>',
+                config: {
+                    id: "app.revanced.android.gms",
+                    url: "https://github.com/MorpheApp/MicroG-RE",
+                    author: "MorpheApp",
+                    name: "MicroG RE",
+                    preferredApkIndex: 0,
+                    additionalSettings: {
+                        includePrereleases: false,
+                        fallbackToOlderReleases: true,
+                        versionDetection: true,
+                        autoApkFilterByArch: true,
+                        appName: "MicroG RE"
+                    }
+                }
+            }
+        ];
+
+        function generateObtainiumUrl(appConfig) {
+            const additionalSettingsStr = JSON.stringify(appConfig.additionalSettings);
+            const fullConfig = {
+                id: appConfig.id,
+                url: appConfig.url,
+                author: appConfig.author,
+                name: appConfig.name,
+                preferredApkIndex: appConfig.preferredApkIndex,
+                additionalSettings: additionalSettingsStr
+            };
+            const jsonStr = JSON.stringify(fullConfig);
+            let encoded = '';
+            for (let i = 0; i < jsonStr.length; i++) {
+                const char = jsonStr[i];
+                const code = jsonStr.charCodeAt(i);
+                if ((code >= 48 && code <= 57) || (code >= 65 && code <= 90) ||
+                    (code >= 97 && code <= 122) || char === '-' || char === '_' ||
+                    char === '.' || char === '~') {
+                    encoded += char;
+                } else {
+                    encoded += '%' + code.toString(16).toUpperCase().padStart(2, '0');
+                }
+            }
+            return 'obtainium://app/' + encoded;
+        }
+
+        function generateAppCards() {
+            const grid = document.getElementById('apps-grid');
+            apps.forEach(app => {
+                const url = generateObtainiumUrl(app.config);
+                const card = document.createElement('a');
+                card.href = url;
+                card.className = `app-card ${app.cssClass}`;
+                card.innerHTML = `
+                    <div class="app-icon">
+                        <svg viewBox="0 0 24 24">${app.iconSvg}</svg>
+                    </div>
+                    <div class="app-info">
+                        <div class="app-name">${app.name}</div>
+                        <div class="app-desc">${app.desc}</div>
+                    </div>
+                    <div class="app-arrow">
+                        <svg viewBox="0 0 24 24">
+                            <path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/>
+                        </svg>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function toggleTheme() {
+            const html = document.documentElement;
+            const currentTheme = html.getAttribute('data-theme');
+            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+            html.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            updateThemeIcon(newTheme);
+        }
+
+        function updateThemeIcon(theme) {
+            const sunIcon = document.getElementById('sun-icon');
+            const moonIcon = document.getElementById('moon-icon');
+            if (theme === 'light') {
+                sunIcon.style.display = 'block';
+                moonIcon.style.display = 'none';
+            } else {
+                sunIcon.style.display = 'none';
+                moonIcon.style.display = 'block';
+            }
+        }
+
+        const savedTheme = localStorage.getItem('theme') || 'dark';
+        document.documentElement.setAttribute('data-theme', savedTheme);
+        updateThemeIcon(savedTheme);
+        
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', generateAppCards);
+        } else {
+            generateAppCards();
+        }
+    </script>
+</body>
+</html>

@@ -1,6 +1,6 @@
-*.apk
-*.zip
-/temp
+
+/module/webroot
+
 /build
 test*
 /logs

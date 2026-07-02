@@ -1,16 +1,153 @@
-name: Build Modules
+name: Build
 on:
-  workflow_call:
-    inputs:
-      from_ci:
-        type: boolean
-        required: false
-        default: true
-
   workflow_dispatch:
+    inputs:
+      build_youtube:
+        description: "YouTube"
+        type: boolean
+        default: true
+      build_youtube_music:
+        description: "YouTube Music"
+        type: boolean
+        default: true
+      build_reddit:
+        description: "Reddit"
+        type: boolean
+        default: true
+      build_x:
+        description: "X"
+        type: boolean
+        default: true
+      build_instagram:
+        description: "Instagram"
+        type: boolean
+        default: true
+  schedule:
+    - cron: "0 0 * * *"
+
+concurrency:
+  group: build-${{ github.workflow }}
+  cancel-in-progress: false
 
 jobs:
-  run:
+  check:
+    name: Check for updates
+    permissions: write-all
+    runs-on: ubuntu-latest
+    outputs:
+      SHOULD_BUILD: ${{ steps.check_updates.outputs.SHOULD_BUILD }}
+      BUILD_FILTER: ${{ steps.check_updates.outputs.BUILD_FILTER }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Check for patch updates
+        id: check_updates
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          IS_MANUAL: ${{ github.event_name == 'workflow_dispatch' }}
+          BUILD_YOUTUBE: ${{ github.event.inputs.build_youtube }}
+          BUILD_YOUTUBE_MUSIC: ${{ github.event.inputs.build_youtube_music }}
+          BUILD_REDDIT: ${{ github.event.inputs.build_reddit }}
+          BUILD_X: ${{ github.event.inputs.build_x }}
+          BUILD_INSTAGRAM: ${{ github.event.inputs.build_instagram }}
+        run: |
+          if [ "$IS_MANUAL" = "true" ]; then
+            FILTER=""
+            [ "$BUILD_YOUTUBE" = "true" ] && FILTER="${FILTER:+$FILTER,}YouTube-Morphe"
+            [ "$BUILD_YOUTUBE_MUSIC" = "true" ] && FILTER="${FILTER:+$FILTER,}YouTube-Music-Morphe"
+            [ "$BUILD_REDDIT" = "true" ] && FILTER="${FILTER:+$FILTER,}Reddit-Morphe"
+            [ "$BUILD_X" = "true" ] && FILTER="${FILTER:+$FILTER,}X-Piko"
+            [ "$BUILD_INSTAGRAM" = "true" ] && FILTER="${FILTER:+$FILTER,}Instagram-Piko"
+            echo "Manual trigger - build filter: ${FILTER:-none selected}"
+            if [ -n "$FILTER" ]; then
+              echo "SHOULD_BUILD=1" >> $GITHUB_OUTPUT
+            else
+              echo "SHOULD_BUILD=0" >> $GITHUB_OUTPUT
+            fi
+            echo "BUILD_FILTER=$FILTER" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          get_last_patches_ver() {
+            local key=$1
+            gh api "repos/${{ github.repository }}/contents/last-patches-${key}.txt?ref=update" \
+              --jq '.content' 2>/dev/null | base64 -d 2>/dev/null | tr -d '\n' || echo ""
+          }
+
+          get_latest_upstream_ver() {
+            local repo=$1 include_pre=$2
+            local tag
+            if [ "$include_pre" = "true" ]; then
+              tag=$(curl -s -H "Authorization: token $GH_TOKEN" \
+                "https://api.github.com/repos/${repo}/releases" | jq -r '.[0].tag_name // ""')
+            else
+              tag=$(curl -s -H "Authorization: token $GH_TOKEN" \
+                "https://api.github.com/repos/${repo}/releases/latest" | jq -r '.tag_name // ""')
+            fi
+            echo "${tag#v}"
+          }
+
+          get_patches_version() {
+            local section=$1
+            local ver
+            ver=$(sed -n "/^\[${section}\]/,/^\[/p" config.toml | grep 'patches-version' | head -1 | sed 's/.*= *"//;s/".*//')
+            if [ -z "$ver" ]; then
+              ver=$(sed -n '1,/^\[/p' config.toml | grep 'patches-version' | head -1 | sed 's/.*= *"//;s/".*//')
+            fi
+            echo "${ver:-latest}"
+          }
+
+          BUILD_MORPHE="false"
+          BUILD_PIKO="false"
+
+          MORPHE_PATCHES_VER=$(get_patches_version "YouTube-Morphe")
+          MORPHE_LAST_VER=$(get_last_patches_ver "morphe-patches")
+          if [ "$MORPHE_PATCHES_VER" = "dev" ]; then
+            MORPHE_LATEST=$(get_latest_upstream_ver "MorpheApp/morphe-patches" "true")
+          else
+            MORPHE_LATEST=$(get_latest_upstream_ver "MorpheApp/morphe-patches" "false")
+          fi
+          if [ -z "$MORPHE_LAST_VER" ] || [ "$MORPHE_LAST_VER" != "$MORPHE_LATEST" ]; then
+            echo "Morphe patches: '${MORPHE_LAST_VER:-none}' -> '${MORPHE_LATEST}'"
+            BUILD_MORPHE="true"
+          fi
+
+          PIKO_PATCHES_VER=$(get_patches_version "X-Piko")
+          PIKO_LAST_VER=$(get_last_patches_ver "piko")
+          if [ "$PIKO_PATCHES_VER" = "dev" ]; then
+            PIKO_LATEST=$(get_latest_upstream_ver "crimera/piko" "true")
+          else
+            PIKO_LATEST=$(get_latest_upstream_ver "crimera/piko" "false")
+          fi
+          if [ -z "$PIKO_LAST_VER" ] || [ "$PIKO_LAST_VER" != "$PIKO_LATEST" ]; then
+            echo "Piko patches: '${PIKO_LAST_VER:-none}' -> '${PIKO_LATEST}'"
+            BUILD_PIKO="true"
+          fi
+
+          BUILD_FILTER=""
+          [ "$BUILD_MORPHE" = "true" ] && BUILD_FILTER="${BUILD_FILTER:+$BUILD_FILTER,}morphe"
+          [ "$BUILD_PIKO" = "true" ] && BUILD_FILTER="${BUILD_FILTER:+$BUILD_FILTER,}piko"
+
+          if [ -n "$BUILD_FILTER" ]; then
+            echo "SHOULD_BUILD=1" >> $GITHUB_OUTPUT
+          else
+            echo "SHOULD_BUILD=0" >> $GITHUB_OUTPUT
+          fi
+          echo "BUILD_FILTER=$BUILD_FILTER" >> $GITHUB_OUTPUT
+
+      - name: Clear old workflow runs
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh run list -L400 --json databaseId -q '.[].databaseId' | tail -n+10 | xargs -IID gh api "repos/${{ github.repository }}/actions/runs/ID" -X DELETE || :
+
+  build:
+    name: Build apps
+    needs: check
+    if: ${{ needs.check.outputs.SHOULD_BUILD == '1' }}
     permissions: write-all
     runs-on: ubuntu-latest
     steps:
@@ -25,132 +162,296 @@ jobs:
           fetch-depth: 0
           submodules: true
 
-      - name: Update config
-        if: ${{ inputs.from_ci }}
+      - name: Get date and version code
+        id: date_ver
         run: |
-          if git checkout origin/update build.md; then
-            UPDATE_CFG=$(./build.sh config.toml --config-update)
-            if [ "$UPDATE_CFG" ]; then
-              echo "$UPDATE_CFG" > config.json
-            fi
+          echo "DATE=$(date -u +%Y-%m-%d)" >> $GITHUB_OUTPUT
+          echo "NEXT_VER_CODE=$(date -u +%Y%m%d)" >> $GITHUB_OUTPUT
+
+      - name: Build modules/APKs
+        run: |
+          chmod +x build.sh bin/htmlq
+          ./build.sh config.toml
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          NEXT_VER_CODE: ${{ steps.date_ver.outputs.NEXT_VER_CODE }}
+          BUILD_FILTER: ${{ needs.check.outputs.BUILD_FILTER }}
+
+      - name: Check if build produced any files
+        id: check_build
+        run: |
+          if [ -z "$(ls -A build/ 2>/dev/null)" ]; then
+            echo "No build artifacts found"
+            echo "HAS_ARTIFACTS=false" >> $GITHUB_OUTPUT
+          else
+            echo "Build artifacts found:"
+            ls -la build/
+            echo "HAS_ARTIFACTS=true" >> $GITHUB_OUTPUT
           fi
 
-      - name: Get next version code
-        id: next_ver_code
+      - name: Create per-app releases
+        if: steps.check_build.outputs.HAS_ARTIFACTS == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_API_TIMEOUT: 60
+        run: |
+          if [ ! -f temp/release_tags.log ]; then
+            echo "No release tags found"
+            exit 0
+          fi
+          sort -u -t'|' -k1,1 temp/release_tags.log > temp/release_tags_unique.log
+          while IFS='|' read -r release_tag release_tag_base release_title files_prefix; do
+            [ -z "$release_tag" ] && continue
+            echo "Processing: ${release_tag} (${release_title})"
+            matching_files=()
+            for f in build/${files_prefix}-v*.apk build/${files_prefix}-module-v*.zip; do
+              [ -f "$f" ] && matching_files+=("$f")
+            done
+            if [ ${#matching_files[@]} -eq 0 ]; then
+              echo "No files for ${files_prefix}, skipping"
+              continue
+            fi
+            notes_file="temp/release_notes/${release_tag_base}.md"
+            if [ -f "$notes_file" ]; then
+              release_body=$(cat "$notes_file")
+            else
+              release_body="## ${release_title}"
+            fi
+            old_tags=$(gh release list --json tagName -q '.[].tagName' | grep "^${release_tag_base}-v" || true)
+            for old_tag in $old_tags; do
+              if [ "$old_tag" != "$release_tag" ]; then
+                echo "  Deleting old release: ${old_tag}"
+                gh release delete "$old_tag" --yes --cleanup-tag 2>/dev/null || true
+              fi
+            done
+            if gh release view "$release_tag" &>/dev/null; then
+              echo "  Updating existing release"
+              gh release edit "$release_tag" \
+                --title "${release_title}" \
+                --notes "${release_body}"
+            else
+              echo "  Creating new release"
+              gh release create "$release_tag" \
+                --title "${release_title}" \
+                --notes "${release_body}"
+            fi
+            for f in "${matching_files[@]}"; do
+              echo "  Uploading: $(basename "$f")"
+              gh release upload "$release_tag" "$f" --clobber
+            done
+          done < temp/release_tags_unique.log
+
+      - name: Update module JSONs, badges and last-patches tracking
+        if: steps.check_build.outputs.HAS_ARTIFACTS == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          TAG=$(gh release list -L 1 | awk -F '\t' '{print $3}')
-          if [ -z "$TAG" ]; then TAG=0; fi
-          echo "NEXT_VER_CODE=$((TAG + 1))" >> $GITHUB_OUTPUT
+          cp build.md /tmp/build.md
+          cp -r temp /tmp/temp_save
+          cp -r build /tmp/build_save
 
-      - name: Build modules/APKs
-        run: if [ -f "config.json" ]; then ./build.sh config.json; else ./build.sh config.toml; fi
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITHUB_REPOSITORY: $GITHUB_REPOSITORY
-          NEXT_VER_CODE: ${{ steps.next_ver_code.outputs.NEXT_VER_CODE }}
-
-      - name: Get output
-        id: get_output
-        run: |
-          DELIM="$(openssl rand -hex 8)"
-          echo "BUILD_LOG<<${DELIM}" >> "$GITHUB_OUTPUT"
-          cat build.md >> "$GITHUB_OUTPUT"
-          echo "${DELIM}" >> "$GITHUB_OUTPUT"
-          cp -f build.md build.tmp
-      
-      - name: Upload release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG: ${{ steps.next_ver_code.outputs.NEXT_VER_CODE }}
-          BODY: ${{ steps.get_output.outputs.BUILD_LOG }}
-        run: |
-          if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release edit "$TAG" --title "Release" --notes "$BODY"
-            gh release upload "$TAG" ./build/* --clobber
+          git fetch origin update 2>/dev/null || true
+          if git rev-parse --verify origin/update >/dev/null 2>&1; then
+            git checkout -f -B update origin/update
           else
-            gh release create "$TAG" ./build/* --title "Release" --notes "$BODY"
+            git switch --discard-changes --orphan update
           fi
 
-      - name: Update modules changelog and update json
-        id: update_config
-        run: |
-          git checkout -f update || git switch --discard-changes --orphan update
-          cp -f build.tmp build.md
-          get_update_json() {
+          cp /tmp/build.md build.md
+          mkdir -p temp
+          cp /tmp/temp_save/build_success.log temp/build_success.log 2>/dev/null || true
+
+          generate_update_json() {
             echo "{
-            \"version\": \"$1\",
-            \"versionCode\": ${{ steps.next_ver_code.outputs.NEXT_VER_CODE }},
-            \"zipUrl\": \"$2\",
-            \"changelog\": \"https://raw.githubusercontent.com/$GITHUB_REPOSITORY/update/build.md\"
-          }"
+              \"version\": \"$1\",
+              \"versionCode\": ${{ steps.date_ver.outputs.NEXT_VER_CODE }},
+              \"zipUrl\": \"$2\",
+              \"changelog\": \"https://raw.githubusercontent.com/${{ github.repository }}/update/build.md\"
+            }"
           }
 
-          cd build || { echo "build folder not found"; exit 1; }
-          for OUTPUT in *module*.zip; do
-            [ "$OUTPUT" = "*module*.zip" ] && continue
-            ZIP_S=$(unzip -p "$OUTPUT" module.prop)
-            if ! UPDATE_JSON=$(echo "$ZIP_S" | grep updateJson); then continue; fi
-            UPDATE_JSON="${UPDATE_JSON##*/}"
-            VER=$(echo "$ZIP_S" | grep version=)
-            VER="${VER##*=}"
-            DLURL="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/releases/download/${{ steps.next_ver_code.outputs.NEXT_VER_CODE }}/${OUTPUT}"
-            get_update_json "$VER" "$DLURL" >"../$UPDATE_JSON"
+          if [ -d /tmp/build_save ]; then
+            cd /tmp/build_save
+            for OUTPUT in *module*.zip; do
+              [ "$OUTPUT" = "*module*.zip" ] && continue
+              ZIP_S=$(unzip -p "$OUTPUT" module.prop 2>/dev/null) || continue
+              UPDATE_JSON=$(echo "$ZIP_S" | grep updateJson || continue)
+              UPDATE_JSON="${UPDATE_JSON##*/}"
+              VER=$(echo "$ZIP_S" | grep version=)
+              VER="${VER##*=}"
+              module_base="${OUTPUT%-module-v*}"
+              module_ver="${OUTPUT#*-module-}"
+              module_ver="${module_ver%-arm64-v8a.zip}"
+              DLURL="${{ github.server_url }}/${{ github.repository }}/releases/download/${module_base}-${module_ver}/${OUTPUT}"
+              generate_update_json "$VER" "$DLURL" > "${GITHUB_WORKSPACE}/$UPDATE_JSON"
+            done
+            cd "${GITHUB_WORKSPACE}"
+          fi
+
+          if [ -f temp/build_success.log ]; then
+            while IFS='|' read -r table_name version app_name brand patches_src patches_ver build_mode arch_f shim_ver; do
+              [ -z "$table_name" ] && continue
+              local_app_tag="${app_name,,}"
+              local_app_tag="${local_app_tag// /-}"
+              local_brand_tag="${brand,,}"
+              local_brand_tag="${local_brand_tag// /-}"
+              badge_file="${local_app_tag}-${local_brand_tag}-badge.json"
+              version_f="${version// /}"
+              version_f="${version_f#v}"
+              echo "{
+                \"schemaVersion\": 1,
+                \"label\": \"${app_name}\",
+                \"message\": \"${version_f}\",
+                \"color\": \"7028E7\"
+              }" > "$badge_file"
+            done < temp/build_success.log
+          fi
+
+          find . -name "*-update.json" -o -name "*-badge.json" | grep -q . || echo "{}" > dummy-update.json
+
+          for f in /tmp/temp_save/last-patches-*.txt; do
+            [ -f "$f" ] && cp "$f" "$(basename "$f")"
           done
-          cd ..
 
-          find . -name "*-update.json" | grep . || : >dummy-update.json
-
-      - name: Commit module json changes
-        run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-      
-          git add build.md *-update.json
-      
+
+          git add build.md 2>/dev/null || true
+          git add *-update.json 2>/dev/null || true
+          git add *-badge.json 2>/dev/null || true
+          git add last-patches-*.txt 2>/dev/null || true
+
           if ! git diff --cached --quiet; then
-            git commit -m "Bump version ${{ steps.next_ver_code.outputs.NEXT_VER_CODE }}"
-            git push origin HEAD:update
+            git commit -m "Build ${{ steps.date_ver.outputs.DATE }}"
+            if ! git push origin HEAD:update; then
+              echo "Push rejected, fetching latest and retrying..."
+              git fetch origin update
+              git push --force-with-lease origin HEAD:update
+            fi
           else
             echo "no changes!"
           fi
 
-      - name: Report to Telegram
+      - name: Notify Telegram
+        if: steps.check_build.outputs.HAS_ARTIFACTS == 'true'
         env:
           TG_TOKEN: ${{ secrets.TG_TOKEN }}
-        if: env.TG_TOKEN != null
+          TG_CHAT: ${{ secrets.TG_CHAT }}
         run: |
-          cd build || { echo "build folder not found"; exit 1; }
+          if [ -z "$TG_TOKEN" ] || [ -z "$TG_CHAT" ]; then
+            echo "Telegram not configured, skipping"
+            exit 0
+          fi
 
-          TG_CHAT="@rvc_magisk"
-          NL=$'\n'
-          APKS=""
-          MODULES=""
-          for OUTPUT in *; do
-            DL_URL="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/releases/download/${{ steps.next_ver_code.outputs.NEXT_VER_CODE }}/${OUTPUT}"
-            if [[ $OUTPUT = *.apk ]]; then
-              APKS+="${NL}📦[${OUTPUT}](${DL_URL})"
-            elif [[ $OUTPUT = *.zip ]]; then
-              MODULES+="${NL}📦[${OUTPUT}](${DL_URL})"
+          echo "::add-mask::${TG_TOKEN}"
+          echo "::add-mask::${TG_CHAT}"
+
+          if [ ! -f temp/build_success.log ]; then
+            echo "No successful builds to notify about"
+            exit 0
+          fi
+
+          extract_cli_version() {
+            basename "$1" | sed 's/.*cli-//; s/-all\.jar$//'
+          }
+
+          REPO_URL="${{ github.server_url }}/${{ github.repository }}"
+
+          send_tg() {
+            local msg="$1" keyboard="$2"
+            msg="${msg:0:4000}"
+            if [ -n "$keyboard" ]; then
+              curl -s -o /dev/null -X POST "https://api.telegram.org/bot${TG_TOKEN}/sendMessage" \
+                --data-urlencode "chat_id=${TG_CHAT}" \
+                --data-urlencode "text=${msg}" \
+                --data-urlencode "parse_mode=HTML" \
+                -d "link_preview_options={\"is_disabled\":true}" \
+                --data-urlencode "reply_markup=${keyboard}" || true
+            else
+              curl -s -o /dev/null -X POST "https://api.telegram.org/bot${TG_TOKEN}/sendMessage" \
+                --data-urlencode "chat_id=${TG_CHAT}" \
+                --data-urlencode "text=${msg}" \
+                --data-urlencode "parse_mode=HTML" \
+                -d "link_preview_options={\"is_disabled\":true}" || true
             fi
-          done
-          MODULES=${MODULES#"$NL"}
-          APKS=${APKS#"$NL"}
+            sleep 2
+          }
 
-          BODY="$(sed 's/^\* \*\*/↪ \*\*/g; s/^\* `/↪ \*\*/g; s/`/\*/g; s/^\* /\↪/g; s/\*\*/\*/g; s/###//g; s/^- /↪ /g; /^==/d;' ../build.md)"
-          MSG="*New build!*
+          while IFS='|' read -r table_name app_ver app_name brand patches_src patches_ver build_mode arch_f shim_ver; do
+            [ -z "$table_name" ] && continue
 
-          ${BODY}
+            patches_display="${patches_ver}"
+            brand_lower="${brand,,}"
+            cli_name=""
+            patches_link=""
+            cli_link=""
+            if [[ "$brand_lower" == *"morphe"* ]] || [[ "$brand_lower" == *"piko"* ]]; then
+              cli_name="Morphe CLI"
+              if [[ "$brand_lower" == *"piko"* ]]; then
+                patches_link='<a href="https://github.com/crimera/piko/releases">Patches</a>'
+              else
+                patches_link='<a href="https://github.com/MorpheApp/morphe-patches/releases">Patches</a>'
+              fi
+              cli_link='<a href="https://github.com/MorpheApp/morphe-cli/releases">CLI</a>'
+            else
+              cli_name="ReVanced CLI"
+              patches_link='<a href="https://github.com/ReVanced/revanced-patches/releases">Patches</a>'
+              cli_link='<a href="https://github.com/inotia00/revanced-cli/releases">CLI</a>'
+            fi
 
-          *▼ Download Links:*
-          Modules:
-          ${MODULES}
+            cli_ver_display=""
+            for cli_file in temp/*/morphe-cli-*.jar temp/*/revanced-cli-*.jar; do
+              if [ -f "$cli_file" ]; then
+                cli_ver_display=$(extract_cli_version "$cli_file")
+                break
+              fi
+            done
 
-          APKs:
-          ${APKS}
-          "
-          echo "'$MSG'"
-          MSG=${MSG:0:9450}
-          POST="https://api.telegram.org/bot${TG_TOKEN}/sendMessage"
-          curl -X POST --data-urlencode "parse_mode=Markdown" --data-urlencode "disable_web_page_preview=true" --data-urlencode "text=${MSG}" --data-urlencode "chat_id=${TG_CHAT}" "$POST"
+            local_app_tag="${app_name,,}"
+            local_app_tag="${local_app_tag// /-}"
+            local_brand_tag="${brand,,}"
+            local_brand_tag="${local_brand_tag// /-}"
+            files_prefix="${local_app_tag}-${local_brand_tag}"
+            version_f="${app_ver// /}"
+            version_f="${version_f#v}"
+            release_tag="${files_prefix}-v${version_f}"
+
+            buttons=()
+            for f in build/${files_prefix}-v*.apk; do
+              [ -f "$f" ] || continue
+              fname=$(basename "$f")
+              dl_url="${REPO_URL}/releases/download/${release_tag}/${fname}"
+              buttons+=("{\"text\":\"🤖 APK\",\"url\":\"${dl_url}\"}")
+            done
+            for f in build/${files_prefix}-module-v*.zip; do
+              [ -f "$f" ] || continue
+              fname=$(basename "$f")
+              dl_url="${REPO_URL}/releases/download/${release_tag}/${fname}"
+              buttons+=("{\"text\":\"🗃️ Module\",\"url\":\"${dl_url}\"}")
+            done
+
+            keyboard=""
+            if [ ${#buttons[@]} -gt 0 ]; then
+              button_row=$(IFS=,; echo "${buttons[*]}")
+              keyboard="{\"inline_keyboard\":[[${button_row}]]}"
+            fi
+
+            shim_line=""
+            shim_link_part=""
+            if [ "${app_name,,}" = "x" ] && [ -n "${shim_ver-}" ]; then
+              shim_line="
+          <b>Shim</b>  <code>${shim_ver}</code>"
+              shim_link_part=' · <a href="https://gitlab.com/inotia00/x-shim/-/releases">Shim</a>'
+            fi
+
+            MSG="<b>🔄 ${app_name} ${brand}</b>  •  <code>${app_ver}</code>
+
+          <b>Patches</b>  <code>${patches_display}</code>
+          <b>${cli_name}</b>  <code>${cli_ver_display}</code>${shim_line}
+
+          📋 ${patches_link} · ${cli_link}${shim_link_part}"
+
+            send_tg "$MSG" "$keyboard"
+
+          done < temp/build_success.log

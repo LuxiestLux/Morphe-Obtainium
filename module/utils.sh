@@ -1,63 +1,107 @@
 #!/system/bin/sh
 
-RVPATH=/data/adb/rvhc/${MODDIR##*/}.apk
+RV_DIR=/data/adb/Morphe-Module
+RVPATH=${RV_DIR}/${MODDIR##*/}.apk
 . "$MODDIR/config"
 
+detect_root_solution() {
+        if [ -f /data/adb/ksu/bin/ksud ]; then
+                echo "kernelsu"
+        elif [ -f /data/adb/ap/bin/apd ]; then
+                echo "apatch"
+        elif [ -f /data/adb/magisk/magisk ]; then
+                echo "magisk"
+        else
+                echo "unknown"
+        fi
+}
+
+ROOT_SOL=${ROOT_SOL:-$(detect_root_solution)}
+
+err() {
+        [ ! -f "$MODDIR/err" ] && cp "$MODDIR/module.prop" "$MODDIR/err"
+        sed -i "s/^des.*/description=⚠️ Needs reflash: '${1}'/g" "$MODDIR/module.prop"
+}
+
 pmex() {
-	OP=$(pm "$@" 2>&1 </dev/null)
-	RET=$?
-	echo "$OP"
-	return $RET
+        OP=$(pm "$@" 2>&1 </dev/null)
+        RET=$?
+        echo "$OP"
+        return $RET
 }
 
 get_app_version() {
-	VERSION=$(dumpsys package "$PKG_NAME" 2>&1 | grep -m1 versionName=) VERSION="${VERSION#*=}"
-	echo "$VERSION"
+        VERSION=$(dumpsys package "$PKG_NAME" 2>&1 | grep -m1 versionName=) VERSION="${VERSION#*=}"
+        echo "$VERSION"
 }
 
 get_basepath() {
-	BASEPATH=$(pmex path "$PKG_NAME")
-	SVCL=$?
+        BASEPATH=$(pmex path "$PKG_NAME")
+        SVCL=$?
+        BASEPATH=${BASEPATH##*:} BASEPATH=${BASEPATH%/*}
+        echo "$BASEPATH"
+        return $SVCL
+}
 
-	BASEPATH=${BASEPATH##*:} BASEPATH=${BASEPATH%/*}
-	echo "$BASEPATH"
-	return $SVCL
+mount_bind() {
+        if [ "$ROOT_SOL" = "kernelsu" ] || [ "$ROOT_SOL" = "apatch" ]; then
+                nsenter -t1 -m mount -o bind,nosuid,nodev "$1" "$2"
+        else
+                su -M -c "mount -o bind,nosuid,nodev '$1' '$2'"
+        fi
+}
+
+umount_target() {
+        if [ "$ROOT_SOL" = "kernelsu" ] || [ "$ROOT_SOL" = "apatch" ]; then
+                nsenter -t1 -m umount -l "$1" 2>/dev/null || umount -l "$1" 2>/dev/null || :
+        else
+                su -M -c "umount -l '$1'" 2>/dev/null || umount -l "$1" 2>/dev/null || :
+        fi
 }
 
 umount_all() {
-	su -M -c grep -F "$PKG_NAME" /proc/mounts | while read -r line; do
-		mp=${line#* } mp=${mp%% *} mp=${mp%%\\*}
-		su -M -c umount -l "${mp}"
-	done
-	am force-stop "$PKG_NAME" || :
+        grep -F "$PKG_NAME" /proc/mounts 2>/dev/null | while read -r line; do
+                mp=${line#* } mp=${mp%% *} mp=${mp%%\\*}
+                umount_target "${mp}"
+        done
+        am force-stop "$PKG_NAME" || :
 }
 
-get_mounts() {
-	su -M -c grep -F "$PKG_NAME" /proc/mounts || :
+susfs_hide_mount() {
+        local target=$1
+        if [ -x /data/adb/ksu/bin/ksu_susfs ]; then
+                /data/adb/ksu/bin/ksu_susfs add_try_umount "$target" 1 >/dev/null 2>&1 || true
+        fi
 }
 
 mount_rv() {
-	if [ ! -d "${1}/lib" ]; then
-		err "mount failed. Dont report this, consider using rvmm-zygisk-mount"
-		return 1
-	fi
-	VERSION=$(get_app_version)
-	if [ "$VERSION" != "$PKG_VER" ] && [ "$VERSION" ]; then
-		err "version mismatch (installed:${VERSION}, module:$PKG_VER)"
-		return 1
-	fi
-	umount_all
-	if ! chcon u:object_r:apk_data_file:s0 "$RVPATH"; then
-		err "apk not found"
-		return 1
-	fi
-	mount -o bind "$RVPATH" "${1}/base.apk"
-	am force-stop "$PKG_NAME"
-	[ -f "$MODDIR/err" ] && mv -f "$MODDIR/err" "$MODDIR/module.prop"
-	return 0
-}
-
-mount_nosleep() {
-	if ! BASEPATH=$(get_basepath); then return 1; fi
-	mount_rv "$BASEPATH"
+        if [ ! -d "${1}/lib" ]; then
+                err "mount failed. Dont report this, consider using rvmm-zygisk-mount"
+                return 1
+        fi
+        VERSION=$(get_app_version)
+        if [ "$VERSION" != "$PKG_VER" ] && [ "$VERSION" ]; then
+                err "version mismatch (installed:${VERSION}, module:$PKG_VER)"
+                return 1
+        fi
+        if grep -q " ${1}/base.apk " /proc/mounts 2>/dev/null; then
+                umount_target "${1}/base.apk"
+        else
+                grep "$PKG_NAME" /proc/mounts 2>/dev/null | while read -r line; do
+                        mp=${line#* } mp=${mp%% *}
+                        umount_target "${mp%%\\*}"
+                done
+        fi
+        if ! chcon u:object_r:apk_data_file:s0 "$RVPATH"; then
+                err "apk not found"
+                return 1
+        fi
+        if ! mount_bind "$RVPATH" "${1}/base.apk"; then
+                err "mount failed"
+                return 1
+        fi
+        susfs_hide_mount "${1}/base.apk"
+        am force-stop "$PKG_NAME"
+        [ -f "$MODDIR/err" ] && mv -f "$MODDIR/err" "$MODDIR/module.prop"
+        return 0
 }
