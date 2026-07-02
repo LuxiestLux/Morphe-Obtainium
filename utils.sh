@@ -736,7 +736,7 @@ patch_apk() {
         tmp_files="$(pwd)/$(mktemp -d -p "$TEMP_DIR")"
         local patches_arg="--patches '$patches_jar'"
         [ -n "$shim_jar" ] && patches_arg="--patches '$shim_jar' --patches '$patches_jar'"
-        local cmd="java -jar '$cli_jar' patch '$stock_input' --purge -o '$patched_apk' $patches_arg --keystore=ks.keystore \
+        local cmd="java -jar '$cli_jar' patch '$stock_input' -o '$patched_apk' $patches_arg --keystore=ks.keystore \
 --keystore-entry-password=987654321 --keystore-password=987654321 --signer=DrSexo --keystore-entry-alias=DrSexo -t '$tmp_files' $patcher_args"
         pr "$cmd"
         if eval "$cmd"; then
