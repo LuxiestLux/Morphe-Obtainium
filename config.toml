@@ -9,8 +9,7 @@ cli-version = "dev"
 [YouTube-Morphe]
 app-name = "YouTube"
 brand = "Morphe"
-build-mode = "both"
-excluded-patches = "'Custom branding'"
+build-mode = "apk"
 uptodown-dlurl = "https://youtube.en.uptodown.com/android"
 apkmirror-dlurl = "https://www.apkmirror.com/apk/google-inc/youtube"
 version = "latest"
@@ -18,7 +17,7 @@ version = "latest"
 [YouTube-Music-Morphe]
 app-name = "YouTube Music"
 brand = "Morphe"
-build-mode = "both"
+build-mode = "apk"
 uptodown-dlurl = "https://youtube-music.en.uptodown.com/android"
 apkmirror-dlurl = "https://www.apkmirror.com/apk/google-inc/youtube-music"
 version = "latest"
@@ -53,3 +52,13 @@ direct-dlurl = "https://github.com/krvstek/uni-storage/releases/download/instagr
 version = "435.0.0.37.76"
 patches-source = "crimera/piko"
 patches-version = "dev"
+
+[Google-Photos]
+app-name = "Google-Photos"
+brand = "Rookie"
+pkg-name = "com.google.android.apps.photos"
+build-mode = "apk"
+uptodown-dlurl = "https://google-photos.en.uptodown.com/android"
+apkmirror-dlurl = "https://www.apkmirror.com/apk/google-inc/photos/
+version = "latest"
+patches-source = "RookieEnough/De-Vanced"
