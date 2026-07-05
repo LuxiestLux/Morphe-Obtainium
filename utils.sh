@@ -10,6 +10,21 @@ DL_SRCS=("direct" "uptodown" "apkmirror" "archive")
 if [ "${GITHUB_TOKEN-}" ]; then GH_HEADER="Authorization: token ${GITHUB_TOKEN}"; else GH_HEADER=; fi
 NEXT_VER_CODE=${NEXT_VER_CODE:-$(date +'%Y%m%d')}
 
+# Derives a friendly display name straight from a "owner/repo" CLI source,
+# e.g. "MorpheApp/morphe-cli" -> "Morphe CLI", "inotia00/revanced-cli" -> "ReVanced CLI".
+# Adding a new cli-source to config.toml needs no change here: unknown repos
+# just get their name title-cased automatically.
+cli_display_name() {
+        local repo="${1:-}" name="${1##*/}"
+        name="${name%-cli}"
+        case "${name,,}" in
+        revanced) echo "ReVanced CLI" ;;
+        morphe) echo "Morphe CLI" ;;
+        "") echo "CLI" ;;
+        *) echo "${name^} CLI" ;;
+        esac
+}
+
 toml_prep() {
         if [ ! -f "$1" ]; then return 1; fi
         if [ "${1##*.}" == toml ]; then
@@ -1089,7 +1104,7 @@ build_rv() {
                 local patches_ver_clean shim_ver_clean
                 patches_ver_clean=$(extract_patches_version "${args[ptjar]}")
                 shim_ver_clean="${args[shim_ver]-}"
-                echo "${table}|${version}|${app_name}|${args[rv_brand]}|${args[patches_src]:-unknown}|${patches_ver_clean}|${mode_arg}|${arch_f}|${shim_ver_clean}" >> "$TEMP_DIR/build_success.log"
+                echo "${table}|${version}|${app_name}|${args[rv_brand]}|${args[patches_src]:-unknown}|${patches_ver_clean}|${mode_arg}|${arch_f}|${shim_ver_clean}|${args[cli_src]:-unknown}" >> "$TEMP_DIR/build_success.log"
         else
                 echo "${table}|FAILED|Patching failed" >> "$TEMP_DIR/build_failed.log"
         fi

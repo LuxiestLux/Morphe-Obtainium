@@ -112,6 +112,7 @@ for table_name in $(toml_get_table_names); do
         app_args[cli]=$cli_jar
         app_args[ptjar]=$patches_jar
         app_args[patches_src]=$patches_src
+        app_args[cli_src]=$cli_src
 
         app_args[riplib]=$(toml_get "$t" riplib) || app_args[riplib]=$DEF_RIPLIB
         app_args[cli_supports_striplibs]=$(check_striplibs "$cli_jar")
@@ -179,7 +180,7 @@ REPO_URL="https://github.com/${GITHUB_REPOSITORY:-Drsexo/Morphe-Obtainium}"
 
 mkdir -p "$TEMP_DIR/release_notes"
 
-while IFS='|' read -r table_name version app_name brand patches_src patches_ver build_mode arch_f shim_ver; do
+while IFS='|' read -r table_name version app_name brand patches_src patches_ver build_mode arch_f shim_ver cli_src; do
         [ -z "$table_name" ] && continue
 
         local_app_tag="${app_name,,}"
@@ -194,23 +195,9 @@ while IFS='|' read -r table_name version app_name brand patches_src patches_ver 
 
         patches_display="${patches_ver}"
 
-        brand_lower="${brand,,}"
-        cli_name=""
-        patches_changelog=""
-        cli_changelog=""
-        if [[ "$brand_lower" == *"morphe"* ]] || [[ "$brand_lower" == *"piko"* ]]; then
-                cli_name="Morphe CLI"
-                if [[ "$brand_lower" == *"piko"* ]]; then
-                        patches_changelog="[Patches](https://github.com/crimera/piko/releases)"
-                else
-                        patches_changelog="[Patches](https://github.com/MorpheApp/morphe-patches/releases)"
-                fi
-                cli_changelog="[CLI](https://github.com/MorpheApp/morphe-cli/releases)"
-        else
-                cli_name="ReVanced CLI"
-                patches_changelog="[Patches](https://github.com/ReVanced/revanced-patches/releases)"
-                cli_changelog="[CLI](https://github.com/inotia00/revanced-cli/releases)"
-        fi
+        cli_name=$(cli_display_name "$cli_src")
+        patches_changelog="[Patches](https://github.com/${patches_src}/releases)"
+        cli_changelog="[CLI](https://github.com/${cli_src}/releases)"
 
         cli_ver_display=""
         for cli_file in "$TEMP_DIR"/*/morphe-cli-*.jar "$TEMP_DIR"/*/revanced-cli-*.jar; do
