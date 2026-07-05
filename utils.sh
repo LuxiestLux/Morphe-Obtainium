@@ -518,11 +518,11 @@ merge_splits() {
                 | grep -v -E '(arm64|armeabi|x86|dpi|base)') || true
         if [ -n "$lang_splits" ]; then
                 local remove_langs
-                remove_langs=$(echo "$lang_splits" | grep -v -E '[._](en|fr|ar)\.apk$') || true
+                remove_langs=$(echo "$lang_splits" | grep -v -E '[._](en|pl)\.apk$') || true
                 if [ -n "$remove_langs" ]; then
                         local lang_count
                         lang_count=$(echo "$remove_langs" | wc -l)
-                        pr "Removing ${lang_count} language splits, keeping en/fr/ar"
+                        pr "Removing ${lang_count} language splits, keeping en/pl"
                         zip -d "${bundle}" $remove_langs 2>/dev/null || true
                 fi
         fi
@@ -532,11 +532,11 @@ merge_splits() {
                 | grep -oP '[^ ]*i18n_[a-z]{2}(_[A-Z]{2})?\.apk') || true
         if [ -n "$i18n_splits" ]; then
                 local remove_i18n
-                remove_i18n=$(echo "$i18n_splits" | grep -v -E 'i18n_(en|fr|ar)') || true
+                remove_i18n=$(echo "$i18n_splits" | grep -v -E 'i18n_(en|pl)') || true
                 if [ -n "$remove_i18n" ]; then
                         local i18n_count
                         i18n_count=$(echo "$remove_i18n" | wc -l)
-                        pr "Removing ${i18n_count} i18n splits, keeping en/fr/ar"
+                        pr "Removing ${i18n_count} i18n splits, keeping en/pl"
                         zip -d "${bundle}" $remove_i18n 2>/dev/null || true
                 fi
         fi
