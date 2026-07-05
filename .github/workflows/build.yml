@@ -22,6 +22,10 @@ on:
         description: "Instagram"
         type: boolean
         default: true
+      build_google_photos:
+        description: "Google Photos"
+        type: boolean
+        default: true
   schedule:
     - cron: "0 0 * * *"
 
@@ -53,6 +57,7 @@ jobs:
           BUILD_REDDIT: ${{ github.event.inputs.build_reddit }}
           BUILD_X: ${{ github.event.inputs.build_x }}
           BUILD_INSTAGRAM: ${{ github.event.inputs.build_instagram }}
+          BUILD_GOOGLE_PHOTOS: ${{ github.event.inputs.build_google_photos }}
         run: |
           if [ "$IS_MANUAL" = "true" ]; then
             FILTER=""
@@ -61,6 +66,7 @@ jobs:
             [ "$BUILD_REDDIT" = "true" ] && FILTER="${FILTER:+$FILTER,}Reddit-Morphe"
             [ "$BUILD_X" = "true" ] && FILTER="${FILTER:+$FILTER,}X-Piko"
             [ "$BUILD_INSTAGRAM" = "true" ] && FILTER="${FILTER:+$FILTER,}Instagram-Piko"
+            [ "$BUILD_GOOGLE_PHOTOS" = "true" ] && FILTER="${FILTER:+$FILTER,}Google-Photos"
             echo "Manual trigger - build filter: ${FILTER:-none selected}"
             if [ -n "$FILTER" ]; then
               echo "SHOULD_BUILD=1" >> $GITHUB_OUTPUT
@@ -102,6 +108,7 @@ jobs:
 
           BUILD_MORPHE="false"
           BUILD_PIKO="false"
+          BUILD_ROOKIE="false"
 
           MORPHE_PATCHES_VER=$(get_patches_version "YouTube-Morphe")
           MORPHE_LAST_VER=$(get_last_patches_ver "morphe-patches")
@@ -127,9 +134,22 @@ jobs:
             BUILD_PIKO="true"
           fi
 
+          ROOKIE_PATCHES_VER=$(get_patches_version "Google-Photos")
+          ROOKIE_LAST_VER=$(get_last_patches_ver "de-vanced")
+          if [ "$ROOKIE_PATCHES_VER" = "dev" ]; then
+            ROOKIE_LATEST=$(get_latest_upstream_ver "RookieEnough/De-Vanced" "true")
+          else
+            ROOKIE_LATEST=$(get_latest_upstream_ver "RookieEnough/De-Vanced" "false")
+          fi
+          if [ -z "$ROOKIE_LAST_VER" ] || [ "$ROOKIE_LAST_VER" != "$ROOKIE_LATEST" ]; then
+            echo "Rookie (Google Photos) patches: '${ROOKIE_LAST_VER:-none}' -> '${ROOKIE_LATEST}'"
+            BUILD_ROOKIE="true"
+          fi
+
           BUILD_FILTER=""
           [ "$BUILD_MORPHE" = "true" ] && BUILD_FILTER="${BUILD_FILTER:+$BUILD_FILTER,}morphe"
           [ "$BUILD_PIKO" = "true" ] && BUILD_FILTER="${BUILD_FILTER:+$BUILD_FILTER,}piko"
+          [ "$BUILD_ROOKIE" = "true" ] && BUILD_FILTER="${BUILD_FILTER:+$BUILD_FILTER,}rookie"
 
           if [ -n "$BUILD_FILTER" ]; then
             echo "SHOULD_BUILD=1" >> $GITHUB_OUTPUT
