@@ -13,7 +13,10 @@
 </div>
 
 Automated builder for Morphe and Piko patched apps with Obtainium support.  
-Fork of [j-hc/revanced-magisk-module](https://github.com/j-hc/revanced-magisk-module), focused on Morphe/Piko patches and arm64-only builds.
+focused on Morphe/Piko patches and arm64-only builds.
+
+Fork of [/Drsexo/Morphe-Obtainium](https://github.com/Drsexo/Morphe-Obtainium), 
+Orginal repo by [j-hc/revanced-magisk-module](https://github.com/j-hc/revanced-magisk-module), 
 
 ## What's different
 
