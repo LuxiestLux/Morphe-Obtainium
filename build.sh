@@ -236,6 +236,7 @@ while IFS='|' read -r table_name version app_name brand patches_src patches_ver 
                 "reddit") app_icon="${raw_base}/reddit.png" ;;
                 "x") app_icon="${raw_base}/x.png" ;;
                 "instagram") app_icon="${raw_base}/instagram.png" ;;
+                "google photos") app_icon="${raw_base}/google-photos.png" ;;
         esac
 
         needs_microg=false

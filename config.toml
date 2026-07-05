@@ -54,11 +54,12 @@ patches-source = "crimera/piko"
 patches-version = "dev"
 
 [Google-Photos]
-app-name = "Google-Photos"
+app-name = "Google Photos"
 brand = "Rookie"
 pkg-name = "com.google.android.apps.photos"
 build-mode = "apk"
 uptodown-dlurl = "https://google-photos.en.uptodown.com/android"
-apkmirror-dlurl = "https://www.apkmirror.com/apk/google-inc/photos/
+apkmirror-dlurl = "https://www.apkmirror.com/apk/google-inc/photos/"
 version = "latest"
 patches-source = "RookieEnough/De-Vanced"
+patches-version = "latest"
