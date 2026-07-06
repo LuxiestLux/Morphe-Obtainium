@@ -1,7 +1,7 @@
 {
     "apps": [
         {
-            "id": "com.google.android.youtube",
+            "id": "app.morphe.android.youtube",
             "url": "https://github.com/LuxiestLux/Morphe-Obtainium",
             "author": "LuxiestLux",
             "name": "YouTube Morphe",
@@ -20,7 +20,7 @@
             "allowIdChange": false
         },
         {
-            "id": "com.google.android.apps.youtube.music",
+            "id": "app.morphe.android.apps.youtube.music",
             "url": "https://github.com/LuxiestLux/Morphe-Obtainium",
             "author": "LuxiestLux",
             "name": "YouTube Music Morphe",
@@ -96,7 +96,7 @@
             "allowIdChange": false
         },
         {
-            "id": "com.google.android.apps.photos",
+            "id": "app.morphe.android.apps.photos",
             "url": "https://github.com/LuxiestLux/Morphe-Obtainium",
             "author": "LuxiestLux",
             "name": "Google Photos Rookie",
