@@ -29,7 +29,7 @@ fi
 DEF_PATCHES_VER=$(toml_get "$main_config_t" patches-version) || DEF_PATCHES_VER="latest"
 DEF_CLI_VER=$(toml_get "$main_config_t" cli-version) || DEF_CLI_VER="latest"
 DEF_PATCHES_SRC=$(toml_get "$main_config_t" patches-source) || DEF_PATCHES_SRC="MorpheApp/morphe-patches"
-DEF_CLI_SRC=$(toml_get "$main_config_t" cli-source) || DEF_CLI_SRC="MorpheApp/morphe-cli"
+DEF_CLI_SRC=$(toml_get "$main_config_t" cli-source) || DEF_CLI_SRC="MorpheApp/morphe-desktop"
 DEF_RV_BRAND=$(toml_get "$main_config_t" brand) || DEF_RV_BRAND=$(toml_get "$main_config_t" rv-brand) || DEF_RV_BRAND="Morphe"
 DEF_RIPLIB=$(toml_get "$main_config_t" riplib) || DEF_RIPLIB="true"
 mkdir -p "$TEMP_DIR" "$BUILD_DIR"
@@ -108,7 +108,7 @@ for table_name in $(toml_get_table_names); do
                 echo "${table_name}|FAILED|Could not download prebuilts" >> "$TEMP_DIR/build_failed.log"
                 continue
         fi
-        read -r cli_jar patches_jar <<<"$PREBUILTS"
+        read -r patches_jar cli_jar <<<"$PREBUILTS"
         app_args[cli]=$cli_jar
         app_args[ptjar]=$patches_jar
         app_args[patches_src]=$patches_src
@@ -173,7 +173,7 @@ for table_name in $(toml_get_table_names); do
         build_rv "$(declare -p app_args)" &
 done
 wait || true
-rm -rf temp/tmp.*
+_clean_tmp
 
 BUILD_DATE=$(date -u +%Y-%m-%d)
 REPO_URL="https://github.com/${GITHUB_REPOSITORY:-Drsexo/Morphe-Obtainium}"
@@ -200,7 +200,7 @@ while IFS='|' read -r table_name version app_name brand patches_src patches_ver 
         cli_changelog="[CLI](https://github.com/${cli_src}/releases)"
 
         cli_ver_display=""
-        for cli_file in "$TEMP_DIR"/*/morphe-cli-*.jar "$TEMP_DIR"/*/revanced-cli-*.jar; do
+        for cli_file in "$TEMP_DIR"/*/morphe-cli-*.jar "$TEMP_DIR"/*/morphe-desktop-*.jar "$TEMP_DIR"/*/revanced-cli-*.jar; do
                 if [ -f "$cli_file" ]; then
                         cli_ver_display=$(extract_cli_version "$cli_file")
                         break

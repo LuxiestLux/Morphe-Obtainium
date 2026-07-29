@@ -1,6 +1,5 @@
 #!/system/bin/sh
-MODDIR=$MODPATH
-. "$MODPATH/utils.sh"
+MODDIR="$MODPATH" . "$MODPATH/utils.sh"
 
 ui_print ""
 
@@ -87,9 +86,15 @@ install() {
                 if [ "$install_err" ]; then break; fi
                 if ! op=$(pmex install-commit "$SES"); then
                         ui_print "$op"
-                        if echo "$op" | grep -q -e INSTALL_FAILED_VERSION_DOWNGRADE -e INSTALL_FAILED_UPDATE_INCOMPATIBLE; then
-                                ui_print "* Uninstalling..."
-                                if ! op=$(pmex uninstall "$PKG_NAME"); then
+                        if echo "$op" | grep -q -e INSTALL_FAILED_VERSION_DOWNGRADE -e INSTALL_FAILED_UPDATE_INCOMPATIBLE -e INSTALL_FAILED_DUPLICATE; then
+                                ex_unins_arg=""
+                                if echo "$op" | grep -q INSTALL_FAILED_DUPLICATE; then
+                                        ui_print "* Uninstalling without data loss..."
+                                        ex_unins_arg="-k"
+                                else
+                                        ui_print "* Uninstalling..."
+                                fi
+                                if ! op=$(pmex uninstall --user 0 $ex_unins_arg "$PKG_NAME"); then
                                         ui_print "$op"
                                         if [ $IT = 2 ]; then
                                                 install_err="ERROR: pm uninstall failed."
@@ -168,7 +173,8 @@ if [ "$KSU" ] || [ -f /data/adb/ksu/bin/ksud ]; then
 fi
 
 rm -rf "${MODPATH:?}/bin" "$MODPATH/stock/"
+cp -f "$MODPATH/module.prop" "$MODPATH/module.prop.orig"
 
-ui_print "* Done"
+ui_print "* Done. No need to reboot."
 ui_print "  by Drsexo (github.com/Drsexo)"
 ui_print " "

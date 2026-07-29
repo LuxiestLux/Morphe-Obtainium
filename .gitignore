@@ -1,9 +1,5 @@
-
-/module/webroot
-
-/build
-test*
-/logs
+/module/webroot/
+/build-termux.sh
 build.md
 cmpr
 *-temporary-files
