@@ -49,7 +49,7 @@ build-mode = "apk"
 uptodown-dlurl = "https://instagram.en.uptodown.com/android"
 apkmirror-dlurl = "https://www.apkmirror.com/apk/instagram/instagram-instagram"
 direct-dlurl = "https://github.com/krvstek/uni-storage/releases/download/instagram/com.instagram.android-435.0.0.37.76-arm64-v8a.apkm"
-version = "435.0.0.37.76"
+version = "439.0.0.37.89"
 patches-source = "crimera/piko"
 patches-version = "dev"
 
