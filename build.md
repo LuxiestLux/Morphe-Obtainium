@@ -1,6 +1,6 @@
-# Build 2026-08-17
+# Build 2026-08-18
 
-X-Piko `12.18.0-beta.0` ✅  
+X-Piko `12.17.0-release.0` ✅  
 Instagram-Piko — ❌  
 Google-Photos — ❌  
 
