@@ -1,4 +1,4 @@
-# Build 2026-09-16
+# Build 2026-09-20
 
-Google-Photos `7.92.0.980155911` ✅  
+Google-Photos `7.93.0.982110057` ✅  
 
